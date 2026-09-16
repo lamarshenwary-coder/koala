@@ -865,19 +865,23 @@ struct MeView: View {
         allowlist.save()
     }
 
-    /// The verbs IntentGenerator actually has worked examples for (see the
-    /// system prompt in IntentGenerator.swift) -- the only ones toggling on
-    /// here can do anything beyond making the model guess at scripting it
-    /// was never shown a pattern for. "open" isn't included: every app gets
-    /// that one for free (see the exception carved out for it), so there's
-    /// nothing to toggle.
-    private static let knownActions = ["read", "compose_draft", "send", "delete", "trash", "move", "create_folder", "open_url", "read_tabs", "create", "append", "create_event"]
-
-    /// The six apps IntentGenerator has real worked-example scripting for --
-    /// action-level toggles only make sense for these. Anything else added
-    /// via "Add an app by name" can only ever be opened, so it doesn't get
-    /// an action editor (see the caption under that field).
-    private static let knownApps: Set<String> = ["Mail", "Messages", "Finder", "Safari", "Notes", "Calendar"]
+    /// Which verbs are even worth showing as a toggle for each app -- a flat
+    /// list of every possible action applied to every app meant "Calendar"
+    /// showed a compose_draft/send/open_url/read_tabs row that does nothing
+    /// for a calendar. Map each of the six known apps to only the actions
+    /// that are actually meaningful for it, matching Allowlist.default's own
+    /// per-app shape (plus Mail/Messages "send", which IntentGenerator has a
+    /// real worked-example script for -- see IntentGenerator.swift). "open"
+    /// isn't listed anywhere here: every app gets that one for free (see the
+    /// exception carved out for it), so there's nothing to toggle for it.
+    private static let knownActionsByApp: [String: [String]] = [
+        "Mail": ["read", "compose_draft", "send", "delete", "trash"],
+        "Messages": ["read", "send", "delete", "trash"],
+        "Finder": ["read", "move", "create_folder", "delete", "trash"],
+        "Safari": ["open_url", "read_tabs"],
+        "Notes": ["read", "create", "append", "delete", "trash"],
+        "Calendar": ["read", "create_event", "delete", "trash"]
+    ]
 
     private func actionEnabledBinding(_ app: String, _ action: String) -> Binding<Bool> {
         Binding(
@@ -974,9 +978,9 @@ struct MeView: View {
                                     Image(systemName: "xmark.circle.fill").font(.system(size: 13))
                                 }.buttonStyle(.plain).foregroundStyle(Color.petMuted)
                             }
-                            if Self.knownApps.contains(appName), allowlist.apps[appName]?.enabled ?? true {
+                            if let actionsForApp = Self.knownActionsByApp[appName], allowlist.apps[appName]?.enabled ?? true {
                                 Flow(spacing: 5) {
-                                    ForEach(Self.knownActions, id: \.self) { action in
+                                    ForEach(actionsForApp, id: \.self) { action in
                                         Button(action) {
                                             actionEnabledBinding(appName, action).wrappedValue.toggle()
                                         }.buttonStyle(Pill(filled: actionEnabledBinding(appName, action).wrappedValue))
