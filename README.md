@@ -47,7 +47,14 @@ Plus one blanket exception: "open X" (just launching/switching to an app) works 
 
 ### Customizing what it's allowed to do
 
-The allowlist lives at `~/Library/Application Support/VoicePet/allowlist.json` and is meant to be edited -- add apps, add actions per app, change which folders it can read or write, or switch a whole app off. It's created with the defaults above the first time the app runs, so edit it after that. Example, adding Spotify (playback control only) and letting it read a Projects folder:
+The Me tab has an "Apps it can control" and a "Folders it can use" section for this -- no JSON editing needed for the common case:
+
+- Turn any app fully on/off with a switch.
+- Add any app by name (opens/switches to it by name -- see the note below on why that's the limit for a newly-added app).
+- For the six built-in apps (Mail, Messages, Finder, Safari, Notes, Calendar), toggle exactly which actions each one is allowed to do -- read, compose_draft, send, delete, trash, move, create_folder, open_url, read_tabs, create, append, create_event -- as individual switches, not an all-or-nothing per app.
+- Add or remove the folders it can read from and write to, picked through a real folder dialog rather than typed by hand, so a typo can't quietly grant access to the wrong place.
+
+Every change there writes straight through to `~/Library/Application Support/VoicePet/allowlist.json`, so hand-editing that file still works too -- useful for bulk changes, or for actions beyond what's listed as a toggle (the UI only exposes the verbs IntentGenerator actually has worked-example scripting for; see `IntentGenerator.swift` if you're teaching it a new one). It's created with the defaults below the first time the app runs. Example of the raw format, adding Spotify playback actions by hand:
 
 ```json
 {

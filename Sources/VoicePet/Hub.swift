@@ -865,6 +865,54 @@ struct MeView: View {
         allowlist.save()
     }
 
+    /// The verbs IntentGenerator actually has worked examples for (see the
+    /// system prompt in IntentGenerator.swift) -- the only ones toggling on
+    /// here can do anything beyond making the model guess at scripting it
+    /// was never shown a pattern for. "open" isn't included: every app gets
+    /// that one for free (see the exception carved out for it), so there's
+    /// nothing to toggle.
+    private static let knownActions = ["read", "compose_draft", "send", "delete", "trash", "move", "create_folder", "open_url", "read_tabs", "create", "append", "create_event"]
+
+    /// The six apps IntentGenerator has real worked-example scripting for --
+    /// action-level toggles only make sense for these. Anything else added
+    /// via "Add an app by name" can only ever be opened, so it doesn't get
+    /// an action editor (see the caption under that field).
+    private static let knownApps: Set<String> = ["Mail", "Messages", "Finder", "Safari", "Notes", "Calendar"]
+
+    private func actionEnabledBinding(_ app: String, _ action: String) -> Binding<Bool> {
+        Binding(
+            get: { allowlist.apps[app]?.allowedActions.contains(action) ?? false },
+            set: { newValue in
+                var actions = Set(allowlist.apps[app]?.allowedActions ?? [])
+                if newValue { actions.insert(action) } else { actions.remove(action) }
+                allowlist.apps[app]?.allowedActions = Array(actions).sorted()
+                allowlist.save()
+            }
+        )
+    }
+
+    /// Folder path chips (readPaths/writePaths) share this add/remove logic.
+    /// NSOpenPanel over a free-text field so a typo can't quietly grant read
+    /// access to the wrong folder -- what you pick is a real, existing path.
+    private func addFolder(to keyPath: WritableKeyPath<Allowlist, [String]>) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        var path = url.path
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        if path.hasPrefix(home) { path = "~" + path.dropFirst(home.count) }
+        guard !allowlist[keyPath: keyPath].contains(path) else { return }
+        allowlist[keyPath: keyPath].append(path)
+        allowlist.save()
+    }
+
+    private func removeFolder(_ path: String, from keyPath: WritableKeyPath<Allowlist, [String]>) {
+        allowlist[keyPath: keyPath].removeAll { $0 == path }
+        allowlist.save()
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -917,14 +965,27 @@ struct MeView: View {
                     Text("Turn an app off and I'll never run anything on it -- not even things I'd normally just ask you to confirm first.")
                         .font(.system(size: 11.5, design: .rounded)).foregroundStyle(Color.petMuted)
                     ForEach(Array(allowlist.apps.keys).sorted(), id: \.self) { appName in
-                        HStack {
-                            Text(appName)
-                            Spacer()
-                            Toggle("", isOn: appEnabledBinding(appName)).toggleStyle(.switch).controlSize(.small).labelsHidden()
-                            Button { removeApp(appName) } label: {
-                                Image(systemName: "xmark.circle.fill").font(.system(size: 13))
-                            }.buttonStyle(.plain).foregroundStyle(Color.petMuted)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(appName)
+                                Spacer()
+                                Toggle("", isOn: appEnabledBinding(appName)).toggleStyle(.switch).controlSize(.small).labelsHidden()
+                                Button { removeApp(appName) } label: {
+                                    Image(systemName: "xmark.circle.fill").font(.system(size: 13))
+                                }.buttonStyle(.plain).foregroundStyle(Color.petMuted)
+                            }
+                            if Self.knownApps.contains(appName), allowlist.apps[appName]?.enabled ?? true {
+                                Flow(spacing: 5) {
+                                    ForEach(Self.knownActions, id: \.self) { action in
+                                        Button(action) {
+                                            actionEnabledBinding(appName, action).wrappedValue.toggle()
+                                        }.buttonStyle(Pill(filled: actionEnabledBinding(appName, action).wrappedValue))
+                                    }
+                                }
+                                .padding(.leading, 2)
+                            }
                         }
+                        .padding(.vertical, 2)
                     }
                     HStack(spacing: 8) {
                         TextField("", text: $newAppName, prompt: Text("Add an app by name (e.g. Spotify)").foregroundStyle(Color.petMuted))
@@ -934,6 +995,44 @@ struct MeView: View {
                     }
                     Text("An app you add this way can only be opened/switched to by name. For anything more specific -- reading messages, composing something, searching -- I'd need to actually be taught that app's scripting first, which isn't done for anything beyond the six above.")
                         .font(.system(size: 11, design: .rounded)).foregroundStyle(Color.petMuted)
+                }.card()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionTitle(text: "Folders it can use")
+                    Text("Read access lets me look things up in a folder. Write access lets me actually put files there. Neither is granted anywhere by default beyond what's listed.")
+                        .font(.system(size: 11.5, design: .rounded)).foregroundStyle(Color.petMuted)
+                    Text("Can read").font(.system(size: 11.5, weight: .semibold, design: .rounded)).foregroundStyle(Color.petInk)
+                    Flow(spacing: 6) {
+                        ForEach(allowlist.readPaths, id: \.self) { path in
+                            HStack(spacing: 4) {
+                                Text(path)
+                                Button { removeFolder(path, from: \.readPaths) } label: {
+                                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                                }.buttonStyle(.plain)
+                            }
+                            .font(.system(size: 11, design: .rounded))
+                            .padding(.horizontal, 9).padding(.vertical, 5)
+                            .background(Capsule().fill(Color.petAccentSoft.opacity(0.6)))
+                        }
+                        Button { addFolder(to: \.readPaths) } label: { Image(systemName: "plus") }
+                            .buttonStyle(Pill(filled: false))
+                    }
+                    Text("Can write").font(.system(size: 11.5, weight: .semibold, design: .rounded)).foregroundStyle(Color.petInk)
+                    Flow(spacing: 6) {
+                        ForEach(allowlist.writePaths, id: \.self) { path in
+                            HStack(spacing: 4) {
+                                Text(path)
+                                Button { removeFolder(path, from: \.writePaths) } label: {
+                                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                                }.buttonStyle(.plain)
+                            }
+                            .font(.system(size: 11, design: .rounded))
+                            .padding(.horizontal, 9).padding(.vertical, 5)
+                            .background(Capsule().fill(Color.petAccentSoft.opacity(0.6)))
+                        }
+                        Button { addFolder(to: \.writePaths) } label: { Image(systemName: "plus") }
+                            .buttonStyle(Pill(filled: false))
+                    }
                 }.card()
 
                 VStack(alignment: .leading, spacing: 10) {
