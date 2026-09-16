@@ -1,4 +1,7 @@
-<p align="center"><img src="docs/koala-idle.png" width="400" alt="The koala"></p>
+<p align="center">
+  <img src="docs/koala-idle.png" width="340" alt="The koala">
+  <img src="docs/koala-app-icon.png" width="120" alt="Koala app icon">
+</p>
 
 <h1 align="center">Koala</h1>
 
