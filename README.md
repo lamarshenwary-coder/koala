@@ -21,6 +21,26 @@ Everything runs on this Mac. Speech recognition, speaker labels, and the koala's
 - A small koala in the menu bar hides or shows it, opens Notes and settings, toggles wandering/voice/sounds, and quits.
 - **The koala itself starts hidden right now.** The panel is deliberately not shown at launch while the app-control pipeline is being worked on (see the comment in `applicationDidFinishLaunching`); the menu bar item's "Show the koala" brings it up. Hotkeys, dictation, notes, and app control all work either way.
 
+## How the koala shows what it's doing
+
+Every one of these is a real, distinct state the code puts it in -- not a mockup. Screenshots straight from the app (`web/tools/capture_local.cjs` renders all seven headless, the same script that made this image):
+
+<p align="center">
+  <img src="docs/koala-states.png" width="720" alt="The koala's seven states: idle, listening, thinking, done, noting, confused, sleeping">
+</p>
+
+| State | When it shows |
+|---|---|
+| **idle** | Default. Nothing's happening. |
+| **listening** | While you're holding **fn** (dictation) or **right ⌥ Option** (chat/commands) -- the ears react to your actual mic level in real time as you talk. |
+| **thinking** | Right after you let go: transcription is finishing, or the local model is working out a reply or a structured action. |
+| **done** | A quick flash when something just finished -- dictation typed, an app action ran, a chat reply is on its way. |
+| **noting** | Recording a meeting (menu bar koala → Notes & settings → Notes → Start) -- the headphones are the tell that it's capturing both your mic and the call's system audio. |
+| **confused** | Something didn't work -- it heard nothing, couldn't work out what you meant, an app-control request needs clarifying, or a step failed. |
+| **sleeping** | No dictation, meeting, or chat for a while (`sleepAfterSeconds` in `AppDelegate.swift`, default 3 minutes). Anything that counts as "using it" wakes it straight back up. |
+
+All of this is driven from one place: `AppDelegate.swift` calls `panel.js("pet.setState('...')")` at each of those moments, and `web/src/main.js` is the only thing that decides what each state actually looks like.
+
 ## Controlling apps by voice
 
 Hold right Option and ask for something concrete -- "open Spotify," "make me a note about the plumber quote," "email dad I'll be late" -- and it does it, not just talks about it. This part is built and working, not a roadmap item:
@@ -100,7 +120,9 @@ First launch: macOS will say it's from an unidentified developer -- System Setti
 
 ## Make it your own creature
 
-The pet is one three.js file, `web/src/main.js`. `CLAUDE.md` explains the small contract the app expects (`pet.setState`, `pet.setLevel`, `pet.lookAt`, `pet.setSounds`, plus optional `setTalking` and `setVelocity` -- the koala implements `setTalking` but not `setVelocity`, and Swift calls both behind `&&` guards). Personas for the brain live in `Sources/VoicePet/Brain.swift`.
+The pet is one three.js file, `web/src/main.js` -- everything in the states table above is just that file responding to `pet.setState(...)`, so changing what it looks like never touches Swift at all. `CLAUDE.md` explains the small contract the app expects (`pet.setState`, `pet.setLevel`, `pet.lookAt`, `pet.setSounds`, plus optional `setTalking` and `setVelocity` -- the koala implements `setTalking` but not `setVelocity`, and Swift calls both behind `&&` guards). Keep those calls doing roughly what they do now (react to the seven states, react to `setLevel` while listening, look toward the cursor) and the rest -- shape, color, animation, whether it's even a koala -- is yours to change.
+
+To see what you changed before rebuilding the whole app: `cd web && node tools/capture_local.cjs` renders all seven states headless to `web/shots/*.png` in a few seconds (it's what generated the image above), which is much faster than a full `./build.sh` just to check a pose looks right. Personas for the brain's personality live separately, in `Sources/VoicePet/Brain.swift` -- swap the name/tone there if you change the creature.
 
 ## Under the hood
 
