@@ -4,7 +4,33 @@ import Foundation
 /// The pet talks back with one of macOS's built-in novelty voices.
 @MainActor
 final class PetVoice: NSObject, AVSpeechSynthesizerDelegate {
-    static let voices = ["Grandpa", "Rocko", "Grandma", "Bad News", "Jester", "Boing", "Bubbles", "Zarvox", "Trinoids"]
+    /// The full "novelty"/character voice catalog Apple has shipped across
+    /// macOS releases -- not all of these exist on every machine or OS
+    /// version (some need a separate download in System Settings ->
+    /// Accessibility -> Spoken Content -> System Voice, and Apple has
+    /// added/renamed a few over the years). `voices` below filters this
+    /// down to whichever are actually installed and speakable on THIS Mac,
+    /// so the picker never shows a button that silently does nothing.
+    private static let noveltyCandidates = [
+        "Grandpa", "Grandma", "Bad News", "Good News", "Jester", "Boing", "Bubbles",
+        "Zarvox", "Trinoids", "Cellos", "Bells", "Bahh", "Albert", "Whisper",
+        "Wobble", "Hysterical", "Deranged", "Pipe Organ", "Organ", "Kathy",
+        "Fred", "Junior", "Ralph", "Rocko", "Superstar", "Eddy", "Flo", "Reed", "Sandy", "Shelley"
+    ]
+
+    /// Only the candidates above that are actually installed on this Mac, in
+    /// the curated order (so the silly ones show first, matching the pet's
+    /// character), followed by any OTHER installed English voice that isn't
+    /// in that list -- e.g. a Siri/Enhanced voice someone downloaded -- so
+    /// nothing already on the machine goes missing just because it wasn't
+    /// hardcoded here.
+    static var voices: [String] {
+        let installed = AVSpeechSynthesisVoice.speechVoices().filter { $0.language.hasPrefix("en") }.map { $0.name }
+        let installedSet = Set(installed)
+        let novelty = noveltyCandidates.filter { installedSet.contains($0) }
+        let rest = Set(installed).subtracting(novelty).sorted()
+        return novelty + rest
+    }
     private let synth = AVSpeechSynthesizer()
     private var lastQuip = Date.distantPast
     var onTalking: ((Bool) -> Void)?
