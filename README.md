@@ -14,11 +14,12 @@ Everything runs on this Mac. Speech recognition, speaker labels, and the koala's
 ## What it does today
 
 - **Dictation anywhere.** Hold fn, speak, release. The text lands where your cursor is.
-- **Meeting notes.** Right-click the koala → Notes → Start before a call. It records you and the other side with a native Core Audio process tap (no BlackHole, no virtual audio device, no Multi-Output Device to configure by hand), transcribes both, labels the speakers, and writes a summary.
+- **Meeting notes.** Menu bar koala → Notes & settings → Notes → Start, before a call. (Right-clicking the koala itself opens the same window, when it's on screen -- see the note below about it starting hidden.) It records you and the other side with a native Core Audio process tap (no BlackHole, no virtual audio device, no Multi-Output Device to configure by hand), transcribes both, labels the speakers, and writes a summary.
 - **A koala to talk to.** Hold right Option and say something. It talks back, remembers facts, and sets reminders, which it says aloud when due.
 - **It sleeps when you're not using it.** No dictation, meeting, or chat for a while (`sleepAfterSeconds` in `AppDelegate.swift`, default 3 minutes) and it dozes off; anything that counts as "using it" wakes it straight back up.
 - **Words.** Teach it names and jargon. It suggests words it keeps hearing, and correcting a dictation teaches it.
-- A small koala in the menu bar hides or shows it, opens Notes and settings, and quits.
+- A small koala in the menu bar hides or shows it, opens Notes and settings, toggles wandering/voice/sounds, and quits.
+- **The koala itself starts hidden right now.** The panel is deliberately not shown at launch while the app-control pipeline is being worked on (see the comment in `applicationDidFinishLaunching`); the menu bar item's "Show the koala" brings it up. Hotkeys, dictation, notes, and app control all work either way.
 
 ## Controlling apps by voice
 
@@ -99,7 +100,7 @@ First launch: macOS will say it's from an unidentified developer -- System Setti
 
 ## Make it your own creature
 
-The pet is one three.js file, `web/src/main.js`. `CLAUDE.md` explains the small contract the app expects (`pet.setState`, `pet.setLevel`, `pet.lookAt`, plus optional `setVelocity`, `setTalking`). Personas for the brain live in `Sources/VoicePet/Brain.swift`.
+The pet is one three.js file, `web/src/main.js`. `CLAUDE.md` explains the small contract the app expects (`pet.setState`, `pet.setLevel`, `pet.lookAt`, `pet.setSounds`, plus optional `setTalking` and `setVelocity` -- the koala implements `setTalking` but not `setVelocity`, and Swift calls both behind `&&` guards). Personas for the brain live in `Sources/VoicePet/Brain.swift`.
 
 ## Under the hood
 

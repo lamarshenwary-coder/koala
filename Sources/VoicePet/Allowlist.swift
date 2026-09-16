@@ -6,8 +6,9 @@ import Foundation
 /// for the code that actually enforces it.
 ///
 /// Lives on disk at ~/Library/Application Support/VoicePet/allowlist.json so
-/// it can be hand-edited or (later) shown in a settings UI. `Allowlist.default`
-/// below is what ships if that file doesn't exist yet.
+/// it can be hand-edited. The Me tab in Hub.swift ("Apps it can control" and
+/// "Folders it can use") reads and writes this same file, so the two stay in
+/// sync. `Allowlist.default` below is what ships if the file doesn't exist yet.
 struct Allowlist: Codable {
     struct AppRule: Codable {
         var allowedActions: [String]

@@ -1,7 +1,11 @@
 import Foundation
 import LLM
 
-/// A small on-device language model (Qwen2.5 1.5B, llama.cpp/Metal) that gives the pet a personality.
+/// The on-device language model that gives the pet a personality: a GGUF run
+/// through llama.cpp/Metal, downloaded on first use. Four tiers (see `models`
+/// below) -- Gemma 4 E4B/12B/26B-A4B picked by installed RAM, with Qwen2.5
+/// 1.5B as the Tiny option. Separate from the app-control model, which is a
+/// different system entirely (see IntentGenerator.swift).
 @MainActor
 final class Brain {
     struct Model { let id: String; let label: String; let file: String; let url: URL; let gb: Double }
@@ -25,7 +29,7 @@ final class Brain {
     private var preparing = false
     private(set) var status = "off"          // off | downloading 42% | loading | ready | failed: …
     var onStatus: ((String) -> Void)?
-    var petName = "frog"
+    var petName = "koala"
     var enabled: Bool { UserDefaults.standard.bool(forKey: "brainOn") }
     var isReady: Bool { llm != nil }
     var chattiness: Double {
@@ -43,7 +47,7 @@ final class Brain {
 
     func systemPrompt() -> String {
         let f = DateFormatter(); f.dateFormat = "EEEE d MMMM yyyy, HH:mm"
-        return (Self.personas[petName] ?? Self.personas["frog"]!) + "\nNow it is \(f.string(from: Date()))." + Mind.shared.promptSection() + """
+        return (Self.personas[petName] ?? Self.personas["koala"]!) + "\nNow it is \(f.string(from: Date()))." + Mind.shared.promptSection() + """
 
         You only type and listen. You cannot do tasks, check things, browse, or send anything, and you never promise to. The one thing you can do is remember: when he asks you to remember something or to remind him, say briefly that you will, and you keep facts about him in mind. When he dictates something, you are a bystander with opinions about it, not an assistant.
         When he dictates something, react to the specific content: a name, a deadline, a place, a mood in it. Dry, warm, a little lazy. Vary your openings; do not start every line the same way.

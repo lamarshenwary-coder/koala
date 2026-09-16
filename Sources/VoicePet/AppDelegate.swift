@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.onLoaded = { [weak self] in
             self?.panel.js("pet.setState('loading')")
             self?.applySoundsPref()
-            self?.panel.webView.evaluateJavaScript("pet.name || 'frog'") { v, _ in if let n = v as? String { self?.brain.petName = n } }
+            self?.panel.webView.evaluateJavaScript("pet.name || 'koala'") { v, _ in if let n = v as? String { self?.brain.petName = n } }
         }
         Task { await brain.prepare() }
         sleepTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in

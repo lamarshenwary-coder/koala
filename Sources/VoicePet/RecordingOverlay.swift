@@ -1,14 +1,16 @@
 import AppKit
 
-/// Floating pill overlay shown while VoicePet is listening/thinking --
+/// Floating pill overlay shown while Koala is listening/thinking --
 /// ported straight from the visual design of Lamar's earlier
 /// AI-Dictation-Tool/Handsfree project (src/overlay.py): an audio-reactive
 /// bar waveform in a blurred HUD pill, borderless, click-through,
 /// always-on-top, centered near the bottom of whichever screen the mouse
-/// is currently on. VoicePet's own koala panel stays hidden for now (per
-/// "get dictation solid before UI/UX") -- this is a small, separate,
-/// purely functional indicator so a hold-to-talk finally has SOME visual
-/// feedback, same as Handsfree already gave for free.
+/// is currently on. The koala panel itself is not shown at launch while the
+/// intent pipeline is being worked on (see `applicationDidFinishLaunching`),
+/// so this is a small, separate, purely functional indicator that gives
+/// hold-to-talk visual feedback either way -- same as Handsfree already gave
+/// for free. It stays useful even once the koala is back on screen, since the
+/// koala wanders and may not be where you're looking.
 final class RecordingOverlay {
     static let shared = RecordingOverlay()
 

@@ -23,11 +23,14 @@ is free:
   visibly react to it.
 - `window.pet.lookAt(x, y)` with x, y in -1..1, where the cursor is relative to the pet.
 - `window.pet.setVelocity(x, y)` and `window.pet.setTalking(on)` -- both optional (called with
-  `&&` guards from Swift), used by `Wander.swift` (idle wandering) and `Voice.swift` (TTS) respectively.
+  `&&` guards from Swift), used by `Wander.swift` (idle wandering) and `Voice.swift` (TTS)
+  respectively. The current koala implements `setTalking` but *not* `setVelocity`, so the wander
+  velocity hint is a silent no-op today -- that's the guard doing its job, not a bug.
 - `window.pet.setSounds(on)` -- toggles the pet's little sound effects (pop/gulp/ding/munch/huh/etc,
   see the bottom of `main.js`).
-- Transparent canvas: `renderer.setClearColor(0, 0)` and `alpha: true`. The canvas is 260x300 CSS
-  px (`W`, `H`), set in `index.html` and `PetPanel.size` in Swift. Change both if you change one.
+- Transparent canvas: `renderer.setClearColor(0, 0)` and `alpha: true`. The canvas is 320x320 CSS
+  px (`W`, `H` in `main.js`, also hardcoded in `index.html`'s CSS and matching `PetPanel.size` in
+  Swift). Change all three if you change one.
 - `?bg=1` paints a dark background for previews, `?demo=1` cycles states, `?state=name` forces one.
 
 After editing, run `cd web && node tools/capture_local.cjs` and look at `web/shots/*.png` before

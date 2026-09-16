@@ -114,11 +114,15 @@ enum IntentGenerator {
 }
 
 /*
- Wiring this into AppDelegate (draft -- decide for real in the Terminal session):
+ How this is wired into AppDelegate (BUILT -- see `stopTalk` and
+ `handleIntent` in AppDelegate.swift for the real thing; the sketch below is
+ kept because it's a readable one-screen summary of a flow that's now spread
+ across two methods):
 
- Right now `startTalk`/`stopTalk` always calls `brain.chat(said)`, which is
- pure persona conversation through the in-process llama.cpp model. Command
- handling needs to be a fork on the transcript, not a replacement:
+ Command handling is a fork on the transcript, not a replacement for
+ `brain.chat(said)`. The shipped version also handles `action == "clarify"`
+ (speak the model's question, do nothing else) before the `app != "none"`
+ check:
 
  func stopTalk() {
      ...
@@ -142,14 +146,14 @@ enum IntentGenerator {
      }
  }
 
- Two real decisions to make on-device, not here:
- 1. Every utterance costs an extra network round-trip to LM Studio before
-    falling back to chat -- on a slow reply this could make dictation-only
-    use feel laggier. Worth benchmarking with `Verbose logs` in LM Studio's
-    Local Model API panel before deciding whether intent-detection runs on
-    every hold-to-talk, or only when a separate hotkey/wake-phrase is used.
- 2. IntentGenerator hits localhost:1234 unconditionally right now -- if LM
-    Studio isn't running, this fails closed (falls back to chat), which is
-    the safe default. Keep it that way; don't add a retry loop that could
-    make a held-down key feel stuck.
+ Still worth measuring on-device, not decided here:
+ 1. Every right-Option utterance costs an extra round-trip to LM Studio
+    before it can fall back to chat. Worth benchmarking with `Verbose logs`
+    in LM Studio's Local Model API panel -- note this is already only on the
+    right-Option path, never on plain fn dictation, so it can't slow typing
+    down. (Dictation via `fn` does not touch this file at all.)
+ 2. IntentGenerator hits localhost:1234 unconditionally -- if LM Studio
+    isn't running, this fails closed (logs the error, falls back to chat),
+    which is the safe default. Keep it that way; don't add a retry loop that
+    could make a held-down key feel stuck.
 */

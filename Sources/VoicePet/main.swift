@@ -8,7 +8,7 @@ import Speech
 //   VoicePet --summarize transcript.txt
 //   VoicePet --tap-test 5            capture 5s of system audio, transcribe it
 //   VoicePet --chat "hey" ["..."]     load the brain once, print its reply to each message (no memory writes)
-//   VoicePet --react "text" ["..."]   the frog's remark after typing each dictation (no memory writes)
+//   VoicePet --react "text" ["..."]   the pet's remark after typing each dictation (no memory writes)
 //   VoicePet --speak "text" out.caf    render a line with the pet's own voice settings to an audio file
 /// Collects AVSpeechSynthesizer.write buffers into one audio file.
 final class SpeechFileWriter: @unchecked Sendable {
@@ -71,7 +71,7 @@ func runDebug(_ args: [String]) -> Bool {
                 var t0 = Date()
                 print("react: \(await brain.react(toDictation: args.count >= 3 ? args[2] : "We should ship the new onboarding flow by Friday.") ?? "nil")")
                 print(String(format: "  %.2fs", Date().timeIntervalSince(t0))); t0 = Date()
-                print("chat:  \(await brain.chat("Hey frog, how is your day going? Also remind me in 20 minutes to call Anna.") ?? "nil")")
+                print("chat:  \(await brain.chat("Hey koala, how is your day going? Also remind me in 20 minutes to call Anna.") ?? "nil")")
                 print(String(format: "  %.2fs incl. memory extraction", Date().timeIntervalSince(t0)))
                 print("reminders: \(await Mind.shared.reminders.map { "\($0.text) @ \($0.due.map { "\($0)" } ?? "no time")" })")
                 print("facts: \(await Mind.shared.facts)")
