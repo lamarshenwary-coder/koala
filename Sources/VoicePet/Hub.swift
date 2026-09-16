@@ -880,7 +880,12 @@ struct MeView: View {
         "Finder": ["read", "move", "create_folder", "delete", "trash"],
         "Safari": ["open_url", "read_tabs"],
         "Notes": ["read", "create", "append", "delete", "trash"],
-        "Calendar": ["read", "create_event", "delete", "trash"]
+        "Calendar": ["read", "create_event", "delete", "trash"],
+        // Brave gets exactly one real action beyond "open" -- IntentGenerator
+        // only has a worked example for open_url (Chromium's "open location"
+        // pattern, not Safari's). Don't add more here without a matching
+        // worked example in IntentGenerator.swift's systemPrompt first.
+        "Brave": ["open_url"]
     ]
 
     private func actionEnabledBinding(_ app: String, _ action: String) -> Binding<Bool> {
@@ -997,7 +1002,7 @@ struct MeView: View {
                             .onSubmit { addApp() }
                         Button("+") { addApp() }.buttonStyle(Pill(filled: true))
                     }
-                    Text("An app you add this way can only be opened/switched to by name. For anything more specific -- reading messages, composing something, searching -- I'd need to actually be taught that app's scripting first, which isn't done for anything beyond the six above.")
+                    Text("An app you add this way can only be opened/switched to by name, unless it's one I've already been taught more about (like Brave). For anything more specific -- reading messages, composing something, searching -- I'd need to actually be taught that app's scripting first, which isn't done for anything beyond the ones above.")
                         .font(.system(size: 11, design: .rounded)).foregroundStyle(Color.petMuted)
                 }.card()
 
