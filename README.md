@@ -5,7 +5,7 @@
 
 <h1 align="center">Koala</h1>
 
-<p align="center">Lamar's personal, fully local, hands-free voice assistant for the Mac.<br>Forked from <a href="https://github.com/Pyanov/frog">Pyanov/frog</a> and being built up into something that can control the machine, not just type into it.</p>
+<p align="center">Lamar's personal, fully local, hands-free voice assistant for the Mac.<br>Forked from <a href="https://github.com/Pyanov/frog">Pyanov/frog</a>: dictation, meeting notes, a koala to talk to, and allowlist-gated voice control of other apps.</p>
 
 Hold **fn** and talk. The koala types what you say into whatever is in front of you: a Claude Code prompt, a terminal, an email. Let go and the text is there. Start it before a call and it takes the notes: who said what, and a summary to read afterwards. Hold **right ⌥ Option** and talk to it. It answers out loud, remembers what you tell it, and keeps you company while you work. It's asleep whenever you're not using it.
 
@@ -20,9 +20,52 @@ Everything runs on this Mac. Speech recognition, speaker labels, and the koala's
 - **Words.** Teach it names and jargon. It suggests words it keeps hearing, and correcting a dictation teaches it.
 - A small koala in the menu bar hides or shows it, opens Notes and settings, and quits.
 
-## Where this is headed
+## Controlling apps by voice
 
-The end goal isn't dictation, it's hands-free control of the Mac itself: hold a key, say what you want done, have it actually happen -- gated behind an explicit allowlist of what apps/actions/folders it's allowed to touch. None of that exists yet. Today this is still just a (very good) dictation + meeting-notes app. See `CLAUDE.md` for the shape of what's being added.
+Hold right Option and ask for something concrete -- "open Spotify," "make me a note about the plumber quote," "email dad I'll be late" -- and it does it, not just talks about it. This part is built and working, not a roadmap item:
+
+1. What you said gets turned into a structured action (`{app, action, target, script, summary}`) by a local model.
+2. That action is checked against an **allowlist** before anything touches your Mac -- every app, every action, every read/write path it's permitted to use is explicit, nothing is allowed by default.
+3. Depending on what the allowlist says, it either runs immediately, asks you to confirm first, or refuses outright with no dialog at all.
+
+The default allowlist:
+
+| App | Allowed actions |
+|---|---|
+| Mail | read, compose_draft |
+| Messages | read |
+| Finder | read, move, create_folder |
+| Safari | open_url, read_tabs |
+| Notes | read, create, append |
+| Calendar | read, create_event |
+
+Plus one blanket exception: "open X" (just launching/switching to an app) works for *any* installed app by name, not just the six above -- that action can't do anything but bring an app to the front, so it doesn't need to be enumerated per-app.
+
+**One honest limitation:** turning speech into that structured action currently depends on [LM Studio](https://lmstudio.ai) running separately with its local server on (`localhost:1234`) -- see the comment at the top of `IntentGenerator.swift`. It's called "the prototyping path" in the code for a reason: the plan is to replace it with an in-process MLX Swift call so the app doesn't need a second app running to control anything. Until then, app control needs LM Studio open; dictation, meeting notes, and chat don't.
+
+**Also worth knowing:** which Brain size you pick (Tiny/Quick/Smart/Genius, see below) has no effect on what actions it can do. The Brain and the app-control model are two separate systems -- Brain tier only changes chat/conversation quality, not the allowlist or what LM Studio is capable of generating.
+
+### Customizing what it's allowed to do
+
+The allowlist lives at `~/Library/Application Support/VoicePet/allowlist.json` and is meant to be edited -- add apps, add actions per app, change which folders it can read or write, or switch a whole app off. It's created with the defaults above the first time the app runs, so edit it after that. Example, adding Spotify (playback control only) and letting it read a Projects folder:
+
+```json
+{
+  "apps": {
+    "Spotify": { "allowedActions": ["open", "play", "pause", "next_track"], "enabled": true },
+    "Mail": { "allowedActions": ["read", "compose_draft"], "enabled": true }
+  },
+  "readPaths": ["~/Documents", "~/Desktop", "~/Downloads", "~/Projects"],
+  "writePaths": ["~/Documents/Koala"]
+}
+```
+
+Two things stay fixed and are **not** in that file, on purpose:
+
+- **Always-confirm verbs** -- `delete`, `trash`, `empty_trash`, `send`, `purchase`, `buy`, `pay`, `checkout`, `unsubscribe`, `cancel_subscription`. These ask before running no matter what the allowlist says, even for an app/action you've otherwise allowlisted.
+- **Never-allowed verbs** -- `system_settings_change`, `install_software`, `sudo`, `disable_security`, `modify_allowlist`, `format_disk`. These refuse outright, no dialog, no exception. Nothing in `allowlist.json` can turn these back on.
+
+That's deliberate, not an oversight: everything about *which apps and actions it can reach* is yours to open up as wide as you want, but the handful of genuinely destructive or self-defeating actions (a voice assistant that can edit its own permission file, for instance) are a hardcoded floor rather than a setting, because a misheard word or a bad transcription shouldn't be able to reach those. `ActionGate.swift` is short and readable if you want to see exactly what's checked before anything runs.
 
 ## The models
 
